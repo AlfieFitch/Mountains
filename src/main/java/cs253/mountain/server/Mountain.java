@@ -40,15 +40,16 @@ public final class Mountain {
 
     /**
      * Create a Mountain object populated with data an an ID of zero
+     * @param id the Mountain id
      * @param name the Mountain name
      * @param altitude the Mountain's altitude (height) in m
      * @param range the Mountain's mountain range
      * @param country the Mountain's country
      * @param isNorthern true if in the Northern hemisphere, false otherwise
      */
-    public Mountain(final String name, final int altitude, final String range, final String country,
+    public Mountain(final int id, final String name, final int altitude, final String range, final String country,
                     final boolean isNorthern) {
-        this.id = 0;
+        this.id = id;
         this.setName(name);
         this.setAltitude(altitude);
         this.setRange(range);

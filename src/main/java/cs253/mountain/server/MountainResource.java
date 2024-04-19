@@ -13,9 +13,8 @@ public class MountainResource{
     
     
     @PostMapping("/")
-    public ResponseEntity<String> saveNew(ArrayList<Mountain> newMountains){
-
-        for( Mountain m : newMountains){
+    public ResponseEntity<String> saveNew(@RequestBody ArrayList<Mountain> newMountains){
+        for(Mountain m : newMountains){
             if(mountains.contains(m)){
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Mountain already exists");
             }else{
