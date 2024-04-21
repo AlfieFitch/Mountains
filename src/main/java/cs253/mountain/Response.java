@@ -1,10 +1,10 @@
-package cs253.mountain.client;
+package cs253.mountain;
+
 
 
 import java.net.http.HttpResponse;
 import java.util.List;
 
-import cs253.mountain.server.Mountain;
 
 /**
  * The response that must be returned by your client code (in an Optional) - it consists of the data returned by the

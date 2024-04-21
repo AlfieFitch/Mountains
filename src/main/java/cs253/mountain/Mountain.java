@@ -1,4 +1,5 @@
-package cs253.mountain.client;
+package cs253.mountain;
+
 
 import java.util.Objects;
 
@@ -40,6 +41,7 @@ public final class Mountain {
 
     /**
      * Create a Mountain object populated with data an an ID of zero
+     * @param id the Mountain id
      * @param name the Mountain name
      * @param altitude the Mountain's altitude (height) in m
      * @param range the Mountain's mountain range
@@ -48,7 +50,6 @@ public final class Mountain {
      */
     public Mountain(final String name, final int altitude, final String range, final String country,
                     final boolean isNorthern) {
-        this.id = 0;
         this.setName(name);
         this.setAltitude(altitude);
         this.setRange(range);
