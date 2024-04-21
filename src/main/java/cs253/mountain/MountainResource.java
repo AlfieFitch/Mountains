@@ -33,6 +33,8 @@ public class MountainResource{
     public ResponseEntity<String> saveNew(@RequestBody String newMountains){
         System.out.println("adding new mountains: " + newMountains);
 
+        //TODO change the way the lists are filtered - use filter method rather than for looping through the lists.
+
         List<Mountain> newMountainsList;
         try {
             ObjectMapper objectMapper = new ObjectMapper();
