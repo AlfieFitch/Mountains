@@ -8,8 +8,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.MediaType;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,8 +29,8 @@ public class MountainResource{
 
     // POST Methods -----------------------------------------------------------------------------------------------q
 
-    @PostMapping("/mountains")
-    public ResponseEntity<String> saveNew(@RequestHeader String newMountains){
+    @PostMapping("/")
+    public ResponseEntity<String> saveNew(@RequestBody String newMountains){
         System.out.println("adding new mountains: " + newMountains);
 
         List<Mountain> newMountainsList;
@@ -46,7 +47,6 @@ public class MountainResource{
                 if(mountains.contains(m)){
                     return ResponseEntity.status(HttpStatus.CONFLICT).body("Mountain already exists");
                 }else{
-                    m.setId(mountains.size() + m.getAltitude() + 1);
                     mountains.add(m);
                 }
             }
@@ -58,24 +58,28 @@ public class MountainResource{
 
     // GET Methods ------------------------------------------------------------------------------------------------
 
-    @GetMapping("/mountains")
-    public ResponseEntity<?> handleRequest(@RequestParam(name = "country", required = false) String country,
-                                           @RequestParam(name = "range", required = false) String range,
+    @GetMapping(value = {"/", "/id/{id}", "/country/{country}", "/country/{country}/range/{range}", "/country/{country}/range/{range}/name/{name}"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> handleRequest(@PathVariable(name = "country", required = false) String country,
+                                           @PathVariable(name = "range", required = false) String range,
+                                           @PathVariable(name = "name", required = false) String name,
+                                           @PathVariable(name = "id", required = false) Integer id,
                                            @RequestParam(name = "hemisphere", required = false) String hemisphere,
-                                           @RequestParam(name = "altitude", required = false) Integer altitude,
-                                           @RequestParam(name = "name", required = false) String name){
+                                           @RequestParam(name = "altitude", required = false) Integer altitude){
         lock.readLock().lock();
         try{
-            if(country != null && range == null){
+            System.out.println("Country: " + country + " Range: " + range + " Name: " + name + " ID: " + id + " Hemisphere: " + hemisphere + " Altitude: " + altitude);
+            if(country != null && range == null && altitude == null){
                 return getMountainsByCountry(country);
-            }else if(range != null && country != null){
+            }else if(range != null){
                 return getMountainsByCountryAndRange(country, range);
             }else if(hemisphere != null){
                 return getMountainsByHemisphere(hemisphere);
             }else if(altitude != null && country != null){
                 return getMountainsByCountryAltitude(country, altitude);
             }else if(name != null){
-                return getMountainByName(name);
+                return getMountainByName(range, country, name);
+            }else if(id != null){
+                return getMountainByID(id);
             }else{
                 return getAllMountains();
             }
@@ -84,8 +88,9 @@ public class MountainResource{
         }
     }
 
-    @GetMapping("/mountains/{id}")
-    public ResponseEntity<?> getMountainByID(@PathVariable int id){
+    // Helper Methods ---------------------------------------------------------------------------------------------
+
+    private ResponseEntity<?> getMountainByID(int id){
         for(Mountain m : mountains){
             if(m.getId() == id){
                 return ResponseEntity.ok(m);
@@ -94,11 +99,9 @@ public class MountainResource{
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mountain with ID " + id + " not found");
     }
 
-    // Helper Methods ---------------------------------------------------------------------------------------------
-
     private ResponseEntity<?> getAllMountains(){
         if(mountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("There are no mountains currently stored.");
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(mountains);
         }else{
             System.out.println("Mountains found");
             return ResponseEntity.ok(mountains);
@@ -113,8 +116,7 @@ public class MountainResource{
             }
         }
         if(countryMountains.isEmpty()){
-            String response = "No mountains found in " + country;
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryMountains);
         }else{
             return ResponseEntity.ok(countryMountains);
         }
@@ -128,8 +130,7 @@ public class MountainResource{
             }
         }
         if(countryRangeMountains.isEmpty()){
-            String response = "No mountains found in " + country + " in the " + range + " range";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryRangeMountains);
         }else{
             return ResponseEntity.ok(countryRangeMountains);
         }
@@ -138,38 +139,38 @@ public class MountainResource{
     private ResponseEntity<?> getMountainsByHemisphere(String hemisphere){
         ArrayList<Mountain> hemisphereMountains = new ArrayList<Mountain>();
         for(Mountain m : mountains){
-            if(hemisphere == "northern" && m.getIsNorthern()){
+            if(hemisphere.equals("northern") && m.getIsNorthern()){
                 hemisphereMountains.add(m);
-            }else if(hemisphere == "southern" && !m.getIsNorthern()){
+            }else if(hemisphere.equals("southern") && !m.getIsNorthern()){
                 hemisphereMountains.add(m);
             }
         }
+        System.out.println(hemisphereMountains);
         if(hemisphereMountains.isEmpty()){
-            String response = "No mountains found in the " + hemisphere + " hemisphere";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(hemisphereMountains);
         }else{
             return ResponseEntity.ok(hemisphereMountains);
         }
     }
 
     private ResponseEntity<?> getMountainsByCountryAltitude(String country, int altitude){
+        System.out.println("Country: " + country + " Altitude: " + altitude);
         ArrayList<Mountain> countryAltitudeMountains = new ArrayList<Mountain>();
         for(Mountain m : mountains){
-            if(m.getCountry().equals(country) && m.getAltitude() == altitude){
+            if(m.getCountry().equals(country) && m.getAltitude() > altitude){
                 countryAltitudeMountains.add(m);
             }
         }
         if(countryAltitudeMountains.isEmpty()){
-            String response = "No mountains found in " + country + " at an altitude of " + altitude + "m";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryAltitudeMountains);
         }else{
             return ResponseEntity.ok(countryAltitudeMountains);
         }
     }
 
-    private ResponseEntity<?> getMountainByName(String name){
+    private ResponseEntity<?> getMountainByName( String range, String country, String name){
         for(Mountain m : mountains){
-            if(m.getName().equals(name)){
+            if(m.getName().equals(name) && m.getRange().equals(range) && m.getCountry().equals(country)){
                 return ResponseEntity.ok(m);
             }
         }
@@ -185,4 +186,8 @@ public class MountainResource{
  * getByAltitude - query param? ?altitude={altitude}
  * getByID - query param? ?id={id}
  * getByName - query param? ?name={name}
+ * 
+ * 
+ * altitude name and id as query, 
+ * Hemisphere, range, country as path param
 */

@@ -90,15 +90,16 @@ public class SharedResources {
     used; and the returned data types are best practice are in the hidden tests.
      */
     static boolean checkResult(final String expectedOutput, final Optional<Response> response) {
+        //System.out.println(response);
         if (response.isPresent()) {
             String resStr = arrayListToString(response.get().getMountains());
             boolean result = expectedOutput.equals(resStr);
             //Can be handy for debugging:
-            /*if (!result) {
+            if (!result) {
                 System.out.println("Expected:");
-                System.out.println(resStr);
+                System.out.println(expectedOutput);
                 outputResult(response);
-            }*/
+            }
             return result;
         } else {
             return false;

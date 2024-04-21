@@ -2,6 +2,7 @@ package cs253.mountain;
 
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Class that represents a mountain - mountains have an integer ID, a name, an altitude (height), a range (mountain
@@ -22,7 +23,7 @@ import java.util.Objects;
  * change it (or add to it) in other ways too.
  */
 public final class Mountain {
-
+    private static final AtomicInteger next_ID = new AtomicInteger(0);
     private static final String FORMAT_STRING = "%s is in the %s range in %s. It is in the "
             + "%s hemisphere and is %dm high.";
     private static final String NORTH = "Northern";
@@ -37,7 +38,9 @@ public final class Mountain {
     /**
      * Create an empty Mountain object
      */
-    public Mountain(){}
+    public Mountain(){
+        this.id = next_ID.getAndIncrement();
+    }
 
     /**
      * Create a Mountain object populated with data an an ID of zero
@@ -51,6 +54,7 @@ public final class Mountain {
     public Mountain(final String name, final int altitude, final String range, final String country,
                     final boolean isNorthern) {
         this.setName(name);
+        this.id = next_ID.getAndIncrement();
         this.setAltitude(altitude);
         this.setRange(range);
         this.setCountry(country);
