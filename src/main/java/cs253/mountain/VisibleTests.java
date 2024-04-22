@@ -90,8 +90,8 @@ public class VisibleTests {
         System.out.println(SharedResources.checkResult(SharedResources.GET_BY_ID,
                 connector.getById(id)) ? "success" : "failure");
         System.out.print("Update mountain: ");
-        //System.out.println(SharedResources.checkResult(SharedResources.EMPTY_RESULT,
-         //       connector.updateMountain(id, updateAnnapurna)) ? "success" : "failure");
+        System.out.println(SharedResources.checkResult(SharedResources.EMPTY_RESULT,
+                connector.updateMountain(id, updateAnnapurna)) ? "success" : "failure");
         System.out.print("Check mountains in Nepal updated: ");
         System.out.println(SharedResources.checkResult(SharedResources.UPDATED_IN_NEPAL,
                 connector.getByCountry("Nepal"))? "success" : "failure");
@@ -105,8 +105,8 @@ public class VisibleTests {
         Optional<Response> getAntofalla = connector.getByName("Argentina", "Andes", "Antofalla");
         id = getAntofalla.get().getMountains().get(0).getId();//** see similar code and comment in UpdateData
         System.out.print("Delete mountain: ");
-        //System.out.println(SharedResources.checkResult(SharedResources.EMPTY_RESULT,
-         //       connector.deleteMountain(id)) ? "success" : "failure");
+        System.out.println(SharedResources.checkResult(SharedResources.EMPTY_RESULT,
+                connector.deleteMountain(id)) ? "success" : "failure");
         System.out.print("Check mountains in Argentina updated: ");
         System.out.println(SharedResources.checkResult(SharedResources.UPDATED_IN_ARGENTINA,
                 connector.getByCountry("Argentina"))? "success" : "failure");

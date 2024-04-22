@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.http.MediaType;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,9 +33,6 @@ public class MountainResource{
 
     @PostMapping("/")
     public ResponseEntity<String> saveNew(@RequestBody String newMountains){
-        System.out.println("adding new mountains: " + newMountains);
-
-        //TODO change the way the lists are filtered - use filter method rather than for looping through the lists.
 
         List<Mountain> newMountainsList;
         try {
@@ -47,7 +46,9 @@ public class MountainResource{
         try{
             for(Mountain m : newMountainsList){
                 if(mountains.contains(m)){
-                    return ResponseEntity.status(HttpStatus.CONFLICT).body("Mountain already exists");
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body("Mountain " + m.getName() + " already exists");
+                }else if(m.getAltitude() <= 0){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Altitude of " + m.getName() + " must be greater than 0");
                 }else{
                     mountains.add(m);
                 }
@@ -56,6 +57,57 @@ public class MountainResource{
             lock.writeLock().unlock();
         }
         return ResponseEntity.status(HttpStatus.CREATED).body("Mountains added successfully");
+    }
+
+    // PUT Methods ------------------------------------------------------------------------------------------------
+
+    @PutMapping("/id/{id}")
+    public ResponseEntity<?> updateMountain(@PathVariable(name = "id") int id, @RequestBody String updatedMountain){
+        Mountain newMountainData = new Mountain();
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            newMountainData = objectMapper.readValue(updatedMountain, Mountain.class);            
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error processing JSON");
+        }
+
+        if(mountains.stream().noneMatch(m -> m.getId() == id)){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mountain with ID " + id + " not found");
+        }else{
+            if(newMountainData.getAltitude() <= 0){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Altitude of " + newMountainData.getName() + " must be greater than 0");
+            }else{
+                lock.writeLock().lock();
+                try{
+                    int index = mountains.indexOf(mountains.stream().filter(m -> m.getId() == id).findFirst().get());
+                    newMountainData.setId(id);
+                    mountains.set(index, newMountainData);
+
+                }finally{
+                    lock.writeLock().unlock();
+                }
+                return ResponseEntity.status(HttpStatus.OK).body(mountains);
+            }
+        }
+    }
+
+    // DELETE Methods ---------------------------------------------------------------------------------------------
+
+    @DeleteMapping("/id/{id}")
+    public ResponseEntity<?> deleteMountain(@PathVariable(name = "id") int id){
+        lock.writeLock().lock();
+        try{
+            Mountain mountainToDelete = mountains.stream().filter(m -> m.getId() == id).findFirst().orElse(null);
+            if(mountainToDelete != null){
+                mountains.remove(mountainToDelete);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mountain with ID " + id + " not found");
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     // GET Methods ------------------------------------------------------------------------------------------------
@@ -69,17 +121,16 @@ public class MountainResource{
                                            @RequestParam(name = "altitude", required = false) Integer altitude){
         lock.readLock().lock();
         try{
-            System.out.println("Country: " + country + " Range: " + range + " Name: " + name + " ID: " + id + " Hemisphere: " + hemisphere + " Altitude: " + altitude);
-            if(country != null && range == null && altitude == null){
-                return getMountainsByCountry(country);
+            if(name != null){
+                return getMountainByName(range, country, name);
             }else if(range != null){
                 return getMountainsByCountryAndRange(country, range);
             }else if(hemisphere != null){
                 return getMountainsByHemisphere(hemisphere);
             }else if(altitude != null && country != null){
                 return getMountainsByCountryAltitude(country, altitude);
-            }else if(name != null){
-                return getMountainByName(range, country, name);
+            }else if(country != null){
+                return getMountainsByCountry(country);
             }else if(id != null){
                 return getMountainByID(id);
             }else{
@@ -93,90 +144,70 @@ public class MountainResource{
     // Helper Methods ---------------------------------------------------------------------------------------------
 
     private ResponseEntity<?> getMountainByID(int id){
-        for(Mountain m : mountains){
-            if(m.getId() == id){
-                return ResponseEntity.ok(m);
-            }
+        List<Mountain> filteredList = mountains.stream().filter(m -> m.getId() == id).toList();
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(filteredList);
+        }else{
+            return ResponseEntity.ok(filteredList);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mountain with ID " + id + " not found");
     }
 
     private ResponseEntity<?> getAllMountains(){
         if(mountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(mountains);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }else{
-            System.out.println("Mountains found");
             return ResponseEntity.ok(mountains);
         }
     }
 
     private ResponseEntity<?> getMountainsByCountry(String country){
-        ArrayList<Mountain> countryMountains = new ArrayList<Mountain>();
-        for(Mountain m : mountains){
-            if(m.getCountry().equals(country)){
-                countryMountains.add(m);
-            }
-        }
-        if(countryMountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryMountains);
+        List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country)).toList();
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }else{
-            return ResponseEntity.ok(countryMountains);
-        }
+            return ResponseEntity.ok(filteredList);
+        }   
     }
 
     private ResponseEntity<?> getMountainsByCountryAndRange(String country, String range){
-        ArrayList<Mountain> countryRangeMountains = new ArrayList<Mountain>();
-        for(Mountain m : mountains){
-            if(m.getCountry().equals(country) && m.getRange().equals(range)){
-                countryRangeMountains.add(m);
-            }
-        }
-        if(countryRangeMountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryRangeMountains);
+        List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getRange().equals(range)).toList();
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }else{
-            return ResponseEntity.ok(countryRangeMountains);
+            return ResponseEntity.ok(filteredList);
         }
     }
 
     private ResponseEntity<?> getMountainsByHemisphere(String hemisphere){
-        ArrayList<Mountain> hemisphereMountains = new ArrayList<Mountain>();
-        for(Mountain m : mountains){
-            if(hemisphere.equals("northern") && m.getIsNorthern()){
-                hemisphereMountains.add(m);
-            }else if(hemisphere.equals("southern") && !m.getIsNorthern()){
-                hemisphereMountains.add(m);
-            }
-        }
-        System.out.println(hemisphereMountains);
-        if(hemisphereMountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(hemisphereMountains);
+        List<Mountain> filteredList;
+        if(hemisphere.equals("north")){
+            filteredList = mountains.stream().filter(m -> m.getIsNorthern()).toList();
         }else{
-            return ResponseEntity.ok(hemisphereMountains);
+            filteredList = mountains.stream().filter(m -> !m.getIsNorthern()).toList();
+        }
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }else{
+            return ResponseEntity.ok(filteredList);
         }
     }
 
     private ResponseEntity<?> getMountainsByCountryAltitude(String country, int altitude){
-        System.out.println("Country: " + country + " Altitude: " + altitude);
-        ArrayList<Mountain> countryAltitudeMountains = new ArrayList<Mountain>();
-        for(Mountain m : mountains){
-            if(m.getCountry().equals(country) && m.getAltitude() > altitude){
-                countryAltitudeMountains.add(m);
-            }
-        }
-        if(countryAltitudeMountains.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(countryAltitudeMountains);
+        List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getAltitude() > altitude).toList();
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }else{
-            return ResponseEntity.ok(countryAltitudeMountains);
+            return ResponseEntity.ok(filteredList);
         }
     }
 
     private ResponseEntity<?> getMountainByName( String range, String country, String name){
-        for(Mountain m : mountains){
-            if(m.getName().equals(name) && m.getRange().equals(range) && m.getCountry().equals(country)){
-                return ResponseEntity.ok(m);
-            }
+        List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getRange().equals(range) && m.getName().equals(name)).toList();
+        if(filteredList.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(filteredList);
+        }else{
+            return ResponseEntity.ok(filteredList);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Mountain with name " + name + " not found");
     }
 }
 
