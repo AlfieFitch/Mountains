@@ -2,9 +2,7 @@ package cs253.mountain;
 
 import java.util.List;
 import java.util.Optional;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,16 +10,31 @@ import java.net.http.HttpResponse;
 import java.net.URI;
 import java.util.ArrayList;
 
+/**
+ * MountainConnector class that acts as the client to interact with the REST API.
+ * @version 1.0
+ * @author Alfie Fitch-May
+ */
+
 
 public class MountainConnector {
 
     HttpClient client = HttpClient.newHttpClient();
     private static String URI_VAL = "http://localhost:8080";
 
+    /**
+     * Constructor for the MountainConnector Class.
+     * @param uri
+     */
     public MountainConnector(String uri){
         URI_VAL = uri;
     }
 
+    /**
+     * Method to add a mountain to the database.
+     * @param mountains - List of mountains to add.
+     * @return Optional<Response> - Response object containing the list of mountains and the response.
+     */
     public Optional<Response> addMountains(List<Mountain> mountains) {
         try {
             ObjectMapper mapper = new ObjectMapper();

@@ -1,10 +1,8 @@
 package cs253.mountain;
 
 import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +18,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import java.util.concurrent.locks.ReentrantReadWriteLock;  
 
+/**
+ * Mountain Resource class that handle the REST API requests.
+ * @version 1.0
+ * @Author: Alfie Fitch-May
+ */
+
 
 @RestController
 public class MountainResource{
@@ -31,6 +35,11 @@ public class MountainResource{
 
     // POST Methods -----------------------------------------------------------------------------------------------q
 
+    /**
+     * POST method that adds new mountains to the list, only if all mountains in the list are new.
+     * @param newMountains - JSON String containng the new mountains data.
+     * @return ResponseEntity<String> - Response message.
+     */
     @PostMapping("/")
     public ResponseEntity<String> saveNew(@RequestBody String newMountains){
 
@@ -61,6 +70,12 @@ public class MountainResource{
 
     // PUT Methods ------------------------------------------------------------------------------------------------
 
+    /**
+     * PUT method that updates the data of a mountain with a specific ID.
+     * @param id - ID of the mountain to be updated.
+     * @param updatedMountain - JSON String containing the updated mountain data.
+     * @return ResponseEntity<?> - Response message.
+     */
     @PutMapping("/id/{id}")
     public ResponseEntity<?> updateMountain(@PathVariable(name = "id") int id, @RequestBody String updatedMountain){
         Mountain newMountainData = new Mountain();
@@ -94,6 +109,11 @@ public class MountainResource{
 
     // DELETE Methods ---------------------------------------------------------------------------------------------
 
+    /**
+     * DELETE method that deletes a mountain with a specific ID.
+     * @param id - ID of the mountain to be deleted.
+     * @return ResponseEntity<?> - Response message.
+     */
     @DeleteMapping("/id/{id}")
     public ResponseEntity<?> deleteMountain(@PathVariable(name = "id") int id){
         lock.writeLock().lock();
@@ -112,6 +132,16 @@ public class MountainResource{
 
     // GET Methods ------------------------------------------------------------------------------------------------
 
+    /**
+     * GET method that returns a list of mountains based on the parameters provided.
+     * @param country - Country of the mountain.
+     * @param range - Range of the mountain.
+     * @param name - Name of the mountain.
+     * @param id - ID of the mountain.
+     * @param hemisphere - Hemisphere of the mountain.
+     * @param altitude - Altitude of the mountain.
+     * @return ResponseEntity<?> - Response message.
+     */
     @GetMapping(value = {"/", "/id/{id}", "/country/{country}", "/country/{country}/range/{range}", "/country/{country}/range/{range}/name/{name}"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> handleRequest(@PathVariable(name = "country", required = false) String country,
                                            @PathVariable(name = "range", required = false) String range,
@@ -143,6 +173,11 @@ public class MountainResource{
 
     // Helper Methods ---------------------------------------------------------------------------------------------
 
+    /**
+     * Helper method that returns a mountain with a specific ID.
+     * @param id - ID of the mountain.
+     * @return ResponseEntity<?> - Mountain Data.
+     */
     private ResponseEntity<?> getMountainByID(int id){
         List<Mountain> filteredList = mountains.stream().filter(m -> m.getId() == id).toList();
         if(filteredList.isEmpty()){
@@ -152,6 +187,10 @@ public class MountainResource{
         }
     }
 
+    /**
+     * Helper method that returns all mountains in the list.
+     * @return ResponseEntity<?> - List of all mountains.
+     */
     private ResponseEntity<?> getAllMountains(){
         if(mountains.isEmpty()){
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -160,6 +199,11 @@ public class MountainResource{
         }
     }
 
+    /**
+     * Helper method that returns a list of mountains based on the country provided.
+     * @param country - Country of the mountain.
+     * @return ResponseEntity<?> - List of mountains.
+     */
     private ResponseEntity<?> getMountainsByCountry(String country){
         List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country)).toList();
         if(filteredList.isEmpty()){
@@ -169,6 +213,12 @@ public class MountainResource{
         }   
     }
 
+    /**
+     * Helper method that returns a list of mountains based on the country and range provided.
+     * @param country - Country of the mountain.
+     * @param range - Range of the mountain.
+     * @return ResponseEntity<?> - List of mountains.
+     */
     private ResponseEntity<?> getMountainsByCountryAndRange(String country, String range){
         List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getRange().equals(range)).toList();
         if(filteredList.isEmpty()){
@@ -178,6 +228,11 @@ public class MountainResource{
         }
     }
 
+    /**
+     * Helper method that returns a list of mountains based on the hemisphere provided.
+     * @param hemisphere - Hemisphere of the mountain.
+     * @return ResponseEntity<?> - List of mountains.
+     */
     private ResponseEntity<?> getMountainsByHemisphere(String hemisphere){
         List<Mountain> filteredList;
         if(hemisphere.equals("north")){
@@ -192,6 +247,12 @@ public class MountainResource{
         }
     }
 
+    /**
+     * Helper method that returns a list of mountains based on the country and altitude provided.
+     * @param country - Country of the mountain.
+     * @param altitude - Altitude of the mountain.
+     * @return ResponseEntity<?> - List of mountains.
+     */
     private ResponseEntity<?> getMountainsByCountryAltitude(String country, int altitude){
         List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getAltitude() > altitude).toList();
         if(filteredList.isEmpty()){
@@ -201,6 +262,13 @@ public class MountainResource{
         }
     }
 
+    /**
+     * Helper method that returns a mountain with a specific name.
+     * @param range - Range of the mountain.
+     * @param country - Country of the mountain.
+     * @param name - Name of the mountain.
+     * @return ResponseEntity<?> - Mountain Data.
+     */
     private ResponseEntity<?> getMountainByName( String range, String country, String name){
         List<Mountain> filteredList = mountains.stream().filter(m -> m.getCountry().equals(country) && m.getRange().equals(range) && m.getName().equals(name)).toList();
         if(filteredList.isEmpty()){
